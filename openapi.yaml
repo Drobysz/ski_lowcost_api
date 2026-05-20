@@ -1,0 +1,1098 @@
+openapi: 3.0.3
+info:
+  title: Zarza-Ski API
+  version: 1.0.0
+  description: >
+    API for low-cost ski stay booking. Prices are calculated by the frontend:
+    420 EUR per started week per person, 120 EUR per empty bed, child
+    coefficients: age < 3 = 0.0, 3-8 = 0.8, age > 8 = 1.0.
+servers:
+  - url: http://localhost:8000/api
+security:
+  - bearerAuth: []
+paths:
+  /clients:
+    post:
+      security: []
+      summary: Register client
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterClientRequest'
+      responses:
+        '201':
+          description: Client registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegisterResponse'
+    get:
+      summary: List authenticated client profile only
+      responses:
+        '200':
+          $ref: '#/components/responses/ClientCollection'
+  /clients/{client}:
+    parameters:
+      - $ref: '#/components/parameters/ClientId'
+    get:
+      summary: Show own client profile
+      responses:
+        '200':
+          $ref: '#/components/responses/ClientItem'
+    put:
+      summary: Update own client profile
+      requestBody:
+        $ref: '#/components/requestBodies/UpdateClient'
+      responses:
+        '200':
+          $ref: '#/components/responses/ClientItem'
+    patch:
+      summary: Update own client profile
+      requestBody:
+        $ref: '#/components/requestBodies/UpdateClient'
+      responses:
+        '200':
+          $ref: '#/components/responses/ClientItem'
+    delete:
+      summary: Delete own client profile
+      responses:
+        '204':
+          description: Deleted
+  /auth/login:
+    post:
+      security: []
+      summary: Client login by tel and password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClientLoginRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/TokenPair'
+  /auth/refresh:
+    post:
+      security: []
+      summary: Rotate client refresh token
+      requestBody:
+        $ref: '#/components/requestBodies/RefreshToken'
+      responses:
+        '200':
+          $ref: '#/components/responses/TokenPair'
+  /auth/logout:
+    post:
+      summary: Logout client
+      responses:
+        '200':
+          $ref: '#/components/responses/Ok'
+  /auth/profile:
+    get:
+      summary: Show authenticated client profile
+      responses:
+        '200':
+          $ref: '#/components/responses/ClientItem'
+    patch:
+      summary: Update authenticated client profile
+      requestBody:
+        $ref: '#/components/requestBodies/UpdateClient'
+      responses:
+        '200':
+          $ref: '#/components/responses/ClientItem'
+  /rooms:
+    get:
+      summary: List rooms
+      responses:
+        '200':
+          $ref: '#/components/responses/RoomCollection'
+  /rooms/{room}:
+    parameters:
+      - $ref: '#/components/parameters/RoomId'
+    get:
+      summary: Show room
+      responses:
+        '200':
+          $ref: '#/components/responses/RoomItem'
+  /reservations:
+    get:
+      summary: List own reservations
+      responses:
+        '200':
+          $ref: '#/components/responses/ReservationCollection'
+    post:
+      summary: Create reservation with accommodations
+      requestBody:
+        $ref: '#/components/requestBodies/StoreReservation'
+      responses:
+        '201':
+          $ref: '#/components/responses/ReservationItem'
+  /reservations/{reservation}:
+    parameters:
+      - $ref: '#/components/parameters/ReservationId'
+    get:
+      summary: Show own reservation
+      responses:
+        '200':
+          $ref: '#/components/responses/ReservationItem'
+    put:
+      summary: Update own reservation
+      requestBody:
+        $ref: '#/components/requestBodies/UpdateReservation'
+      responses:
+        '200':
+          $ref: '#/components/responses/ReservationItem'
+    patch:
+      summary: Update own reservation
+      requestBody:
+        $ref: '#/components/requestBodies/UpdateReservation'
+      responses:
+        '200':
+          $ref: '#/components/responses/ReservationItem'
+    delete:
+      summary: Cancel own reservation
+      responses:
+        '200':
+          $ref: '#/components/responses/Ok'
+  /accommodations:
+    get:
+      summary: List own accommodations
+      responses:
+        '200':
+          $ref: '#/components/responses/AccommodationCollection'
+    post:
+      summary: Create accommodation for owned reservation
+      requestBody:
+        $ref: '#/components/requestBodies/StoreAccommodation'
+      responses:
+        '201':
+          $ref: '#/components/responses/AccommodationItem'
+  /accommodations/{accommodation}:
+    parameters:
+      - $ref: '#/components/parameters/AccommodationId'
+    get:
+      summary: Show own accommodation
+      responses:
+        '200':
+          $ref: '#/components/responses/AccommodationItem'
+    put:
+      summary: Update own accommodation
+      requestBody:
+        $ref: '#/components/requestBodies/UpdateAccommodation'
+      responses:
+        '200':
+          $ref: '#/components/responses/AccommodationItem'
+    patch:
+      summary: Update own accommodation
+      requestBody:
+        $ref: '#/components/requestBodies/UpdateAccommodation'
+      responses:
+        '200':
+          $ref: '#/components/responses/AccommodationItem'
+    delete:
+      summary: Delete own accommodation
+      responses:
+        '204':
+          description: Deleted
+  /stripe/checkout:
+    post:
+      summary: Create Stripe checkout session
+      requestBody:
+        $ref: '#/components/requestBodies/StripeCheckout'
+      responses:
+        '200':
+          description: Checkout URL
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      checkout_url:
+                        type: string
+                        format: uri
+  /stripe/webhook:
+    post:
+      security: []
+      summary: Stripe webhook
+      responses:
+        '200':
+          $ref: '#/components/responses/Ok'
+  /admin/login:
+    post:
+      security: []
+      summary: Admin login by name and password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminLoginRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/TokenPair'
+  /admin/refresh:
+    post:
+      security: []
+      summary: Rotate admin refresh token
+      requestBody:
+        $ref: '#/components/requestBodies/RefreshToken'
+      responses:
+        '200':
+          $ref: '#/components/responses/TokenPair'
+  /admin/logout:
+    post:
+      summary: Logout admin
+      responses:
+        '200':
+          $ref: '#/components/responses/Ok'
+  /admin/admins:
+    get:
+      summary: Admin list admins
+      responses:
+        '200':
+          $ref: '#/components/responses/AdminCollection'
+    post:
+      summary: Admin create admin
+      requestBody:
+        $ref: '#/components/requestBodies/StoreAdmin'
+      responses:
+        '201':
+          $ref: '#/components/responses/AdminItem'
+  /admin/admins/{admin}:
+    parameters:
+      - $ref: '#/components/parameters/AdminId'
+    get:
+      summary: Admin show admin
+      responses:
+        '200':
+          $ref: '#/components/responses/AdminItem'
+    put:
+      summary: Admin update admin
+      requestBody:
+        $ref: '#/components/requestBodies/UpdateAdmin'
+      responses:
+        '200':
+          $ref: '#/components/responses/AdminItem'
+    patch:
+      summary: Admin update admin
+      requestBody:
+        $ref: '#/components/requestBodies/UpdateAdmin'
+      responses:
+        '200':
+          $ref: '#/components/responses/AdminItem'
+    delete:
+      summary: Admin delete admin
+      responses:
+        '204':
+          description: Deleted
+  /admin/clients:
+    get:
+      summary: Admin list clients
+      responses:
+        '200':
+          $ref: '#/components/responses/ClientCollection'
+    post:
+      summary: Admin create client
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterClientRequest'
+      responses:
+        '201':
+          $ref: '#/components/responses/ClientItem'
+  /admin/clients/{client}:
+    parameters:
+      - $ref: '#/components/parameters/ClientId'
+    get:
+      summary: Admin show client
+      responses:
+        '200':
+          $ref: '#/components/responses/ClientItem'
+    put:
+      summary: Admin update client
+      requestBody:
+        $ref: '#/components/requestBodies/UpdateClient'
+      responses:
+        '200':
+          $ref: '#/components/responses/ClientItem'
+    patch:
+      summary: Admin update client
+      requestBody:
+        $ref: '#/components/requestBodies/UpdateClient'
+      responses:
+        '200':
+          $ref: '#/components/responses/ClientItem'
+    delete:
+      summary: Admin delete client
+      responses:
+        '204':
+          description: Deleted
+  /admin/rooms:
+    get:
+      summary: Admin list rooms
+      responses:
+        '200':
+          $ref: '#/components/responses/RoomCollection'
+    post:
+      summary: Admin create room
+      requestBody:
+        $ref: '#/components/requestBodies/StoreRoom'
+      responses:
+        '201':
+          $ref: '#/components/responses/RoomItem'
+  /admin/rooms/{room}:
+    parameters:
+      - $ref: '#/components/parameters/RoomId'
+    get:
+      summary: Admin show room
+      responses:
+        '200':
+          $ref: '#/components/responses/RoomItem'
+    put:
+      summary: Admin update room
+      requestBody:
+        $ref: '#/components/requestBodies/UpdateRoom'
+      responses:
+        '200':
+          $ref: '#/components/responses/RoomItem'
+    patch:
+      summary: Admin update room
+      requestBody:
+        $ref: '#/components/requestBodies/UpdateRoom'
+      responses:
+        '200':
+          $ref: '#/components/responses/RoomItem'
+    delete:
+      summary: Admin delete room
+      responses:
+        '204':
+          description: Deleted
+  /admin/reservations:
+    get:
+      summary: Admin list reservations
+      responses:
+        '200':
+          $ref: '#/components/responses/ReservationCollection'
+    post:
+      summary: Admin create reservation
+      requestBody:
+        $ref: '#/components/requestBodies/StoreReservation'
+      responses:
+        '201':
+          $ref: '#/components/responses/ReservationItem'
+  /admin/reservations/{reservation}:
+    parameters:
+      - $ref: '#/components/parameters/ReservationId'
+    get:
+      summary: Admin show reservation
+      responses:
+        '200':
+          $ref: '#/components/responses/ReservationItem'
+    put:
+      summary: Admin update reservation
+      requestBody:
+        $ref: '#/components/requestBodies/UpdateReservation'
+      responses:
+        '200':
+          $ref: '#/components/responses/ReservationItem'
+    patch:
+      summary: Admin update reservation
+      requestBody:
+        $ref: '#/components/requestBodies/UpdateReservation'
+      responses:
+        '200':
+          $ref: '#/components/responses/ReservationItem'
+    delete:
+      summary: Admin cancel reservation
+      responses:
+        '200':
+          $ref: '#/components/responses/Ok'
+  /admin/accommodations:
+    get:
+      summary: Admin list accommodations
+      responses:
+        '200':
+          $ref: '#/components/responses/AccommodationCollection'
+    post:
+      summary: Admin create accommodation
+      requestBody:
+        $ref: '#/components/requestBodies/StoreAccommodation'
+      responses:
+        '201':
+          $ref: '#/components/responses/AccommodationItem'
+  /admin/accommodations/{accommodation}:
+    parameters:
+      - $ref: '#/components/parameters/AccommodationId'
+    get:
+      summary: Admin show accommodation
+      responses:
+        '200':
+          $ref: '#/components/responses/AccommodationItem'
+    put:
+      summary: Admin update accommodation
+      requestBody:
+        $ref: '#/components/requestBodies/UpdateAccommodation'
+      responses:
+        '200':
+          $ref: '#/components/responses/AccommodationItem'
+    patch:
+      summary: Admin update accommodation
+      requestBody:
+        $ref: '#/components/requestBodies/UpdateAccommodation'
+      responses:
+        '200':
+          $ref: '#/components/responses/AccommodationItem'
+    delete:
+      summary: Admin delete accommodation
+      responses:
+        '204':
+          description: Deleted
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: Sanctum
+  parameters:
+    AdminId:
+      name: admin
+      in: path
+      required: true
+      schema:
+        type: integer
+    ClientId:
+      name: client
+      in: path
+      required: true
+      schema:
+        type: integer
+    RoomId:
+      name: room
+      in: path
+      required: true
+      schema:
+        type: integer
+    ReservationId:
+      name: reservation
+      in: path
+      required: true
+      schema:
+        type: integer
+    AccommodationId:
+      name: accommodation
+      in: path
+      required: true
+      schema:
+        type: integer
+  requestBodies:
+    RefreshToken:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [refresh_token]
+            properties:
+              refresh_token:
+                type: string
+    StoreAdmin:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/StoreAdminRequest'
+    UpdateAdmin:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/UpdateAdminRequest'
+    UpdateClient:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/UpdateClientRequest'
+    StoreRoom:
+      required: true
+      content:
+        multipart/form-data:
+          schema:
+            $ref: '#/components/schemas/StoreRoomRequest'
+    UpdateRoom:
+      required: true
+      content:
+        multipart/form-data:
+          schema:
+            $ref: '#/components/schemas/UpdateRoomRequest'
+    StoreReservation:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/StoreReservationRequest'
+    UpdateReservation:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/UpdateReservationRequest'
+    StoreAccommodation:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/StoreAccommodationRequest'
+    UpdateAccommodation:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/UpdateAccommodationRequest'
+    StripeCheckout:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/StripeCheckoutRequest'
+  responses:
+    Ok:
+      description: OK
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              ok:
+                type: boolean
+                example: true
+    TokenPair:
+      description: Token pair
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/TokenPair'
+    AdminItem:
+      description: Admin resource
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/DataEnvelope'
+              - type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Admin'
+    AdminCollection:
+      description: Admin collection
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Admin'
+    ClientItem:
+      description: Client resource
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/DataEnvelope'
+              - type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Client'
+    ClientCollection:
+      description: Client collection
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Client'
+    RoomItem:
+      description: Room resource
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/DataEnvelope'
+              - type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Room'
+    RoomCollection:
+      description: Room collection
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Room'
+    ReservationItem:
+      description: Reservation resource
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/DataEnvelope'
+              - type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Reservation'
+    ReservationCollection:
+      description: Reservation collection
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Reservation'
+    AccommodationItem:
+      description: Accommodation resource
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/DataEnvelope'
+              - type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Accommodation'
+    AccommodationCollection:
+      description: Accommodation collection
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Accommodation'
+  schemas:
+    DataEnvelope:
+      type: object
+      properties:
+        data:
+          type: object
+    TokenPair:
+      type: object
+      required: [access_token, refresh_token]
+      properties:
+        access_token:
+          type: string
+        refresh_token:
+          type: string
+    RegisterResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            id:
+              type: integer
+        message:
+          type: string
+          example: Client registered successfully
+    RegisterClientRequest:
+      type: object
+      required: [first_name, last_name, age, address, birth_date, tel, skiing_level, height, weight, shoe_size, password, password_confirmation]
+      properties:
+        first_name:
+          type: string
+          maxLength: 50
+        last_name:
+          type: string
+          maxLength: 50
+        age:
+          type: integer
+          minimum: 0
+        address:
+          type: string
+          maxLength: 255
+        birth_date:
+          type: string
+          format: date
+        tel:
+          type: string
+          maxLength: 50
+          example: '+33000000001'
+        skiing_level:
+          type: string
+          enum: [beginner, medium, confirmed]
+        height:
+          type: number
+          example: 1.78
+        weight:
+          type: integer
+          minimum: 0
+        shoe_size:
+          type: integer
+          minimum: 0
+        password:
+          type: string
+          minLength: 8
+        password_confirmation:
+          type: string
+    UpdateClientRequest:
+      type: object
+      properties:
+        first_name:
+          type: string
+          maxLength: 50
+        last_name:
+          type: string
+          maxLength: 50
+        age:
+          type: integer
+          minimum: 0
+        address:
+          type: string
+          maxLength: 255
+        birth_date:
+          type: string
+          format: date
+        tel:
+          type: string
+          maxLength: 50
+        skiing_level:
+          type: string
+          enum: [beginner, medium, confirmed]
+        height:
+          type: number
+        weight:
+          type: integer
+          minimum: 0
+        shoe_size:
+          type: integer
+          minimum: 0
+        password:
+          type: string
+          minLength: 8
+    ClientLoginRequest:
+      type: object
+      required: [tel, password]
+      properties:
+        tel:
+          type: string
+        password:
+          type: string
+    AdminLoginRequest:
+      type: object
+      required: [name, password]
+      properties:
+        name:
+          type: string
+          example: admin
+        password:
+          type: string
+          example: password123
+    StoreAdminRequest:
+      type: object
+      required: [name, password]
+      properties:
+        name:
+          type: string
+        password:
+          type: string
+          minLength: 8
+    UpdateAdminRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        password:
+          type: string
+          minLength: 8
+    StoreRoomRequest:
+      type: object
+      required: [num, nb_lits, building_id, floor, surface, view, balcony]
+      properties:
+        num:
+          type: integer
+          minimum: 1
+        nb_lits:
+          type: integer
+          enum: [2, 4, 6]
+        building_id:
+          type: integer
+          minimum: 1
+        floor:
+          type: integer
+        surface:
+          type: integer
+          minimum: 1
+        view:
+          type: string
+          enum: [parking, mountains]
+        balcony:
+          type: boolean
+        images:
+          type: array
+          items:
+            type: string
+            format: binary
+    UpdateRoomRequest:
+      type: object
+      properties:
+        num:
+          type: integer
+          minimum: 1
+        nb_lits:
+          type: integer
+          enum: [2, 4, 6]
+        building_id:
+          type: integer
+          minimum: 1
+        floor:
+          type: integer
+        surface:
+          type: integer
+          minimum: 1
+        view:
+          type: string
+          enum: [parking, mountains]
+        balcony:
+          type: boolean
+        images:
+          type: array
+          items:
+            type: string
+            format: binary
+    StoreReservationRequest:
+      type: object
+      required: [client_id, check_in, check_out, accommodations]
+      properties:
+        client_id:
+          type: integer
+        check_in:
+          type: string
+          format: date-time
+        check_out:
+          type: string
+          format: date-time
+        total_price:
+          type: number
+          nullable: true
+        status:
+          $ref: '#/components/schemas/ReservationStatus'
+        accommodations:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            required: [room_id, client_id]
+            properties:
+              room_id:
+                type: integer
+              client_id:
+                type: integer
+    UpdateReservationRequest:
+      type: object
+      properties:
+        client_id:
+          type: integer
+        check_in:
+          type: string
+          format: date-time
+        check_out:
+          type: string
+          format: date-time
+        purchase_date:
+          type: string
+          format: date-time
+          nullable: true
+        status:
+          $ref: '#/components/schemas/ReservationStatus'
+        total_price:
+          type: number
+          nullable: true
+        stripe_session_id:
+          type: string
+          nullable: true
+        paid_at:
+          type: string
+          format: date-time
+          nullable: true
+    StoreAccommodationRequest:
+      type: object
+      required: [reservation_id, room_id, client_id]
+      properties:
+        reservation_id:
+          type: integer
+        room_id:
+          type: integer
+        client_id:
+          type: integer
+    UpdateAccommodationRequest:
+      type: object
+      properties:
+        reservation_id:
+          type: integer
+        room_id:
+          type: integer
+        client_id:
+          type: integer
+    StripeCheckoutRequest:
+      type: object
+      required: [reservation_id, final_price, currency, title]
+      properties:
+        reservation_id:
+          type: integer
+        final_price:
+          type: number
+          minimum: 0.01
+        currency:
+          type: string
+          enum: [eur]
+        title:
+          type: string
+          maxLength: 255
+    Admin:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    Client:
+      type: object
+      properties:
+        id:
+          type: integer
+        first_name:
+          type: string
+        last_name:
+          type: string
+        age:
+          type: integer
+        address:
+          type: string
+        birth_date:
+          type: string
+          format: date
+        tel:
+          type: string
+        skiing_level:
+          type: string
+          enum: [beginner, medium, confirmed]
+        height:
+          type: string
+        weight:
+          type: integer
+        shoe_size:
+          type: integer
+        role:
+          type: string
+          enum: [client, admin]
+    Room:
+      type: object
+      properties:
+        id:
+          type: integer
+        num:
+          type: integer
+        nb_lits:
+          type: integer
+        building_id:
+          type: integer
+        floor:
+          type: integer
+        surface:
+          type: integer
+        view:
+          type: string
+          enum: [parking, mountains]
+        balcony:
+          type: boolean
+        images:
+          type: array
+          items:
+            $ref: '#/components/schemas/Image'
+    Image:
+      type: object
+      properties:
+        id:
+          type: integer
+        room_id:
+          type: integer
+        name:
+          type: string
+        path:
+          type: string
+        url:
+          type: string
+          nullable: true
+    ReservationStatus:
+      type: string
+      enum: [not paid, paid, approaching, in process, finished, cancelled]
+    Reservation:
+      type: object
+      properties:
+        id:
+          type: integer
+        client_id:
+          type: integer
+        check_in:
+          type: string
+          format: date-time
+        check_out:
+          type: string
+          format: date-time
+        purchase_date:
+          type: string
+          format: date-time
+          nullable: true
+        status:
+          $ref: '#/components/schemas/ReservationStatus'
+        total_price:
+          type: string
+          nullable: true
+        stripe_session_id:
+          type: string
+          nullable: true
+        paid_at:
+          type: string
+          format: date-time
+          nullable: true
+        accommodations:
+          type: array
+          items:
+            $ref: '#/components/schemas/Accommodation'
+    Accommodation:
+      type: object
+      properties:
+        id:
+          type: integer
+        reservation_id:
+          type: integer
+        room_id:
+          type: integer
+          nullable: true
+        client_id:
+          type: integer
