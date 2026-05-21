@@ -5,11 +5,15 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreRoomRequest;
 use App\Http\Requests\UpdateRoomRequest;
+use App\Http\Resources\ClientRoomResource;
 use App\Http\Resources\RoomResource;
+use App\Models\Accommodation;
+use App\Models\Client;
 use App\Models\Image;
 use App\Models\Room;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -23,6 +27,25 @@ class RoomController extends Controller
     public function index(): AnonymousResourceCollection
     {
         return RoomResource::collection(Room::query()->with('images')->latest('id')->paginate());
+    }
+
+    public function my(Request $request): AnonymousResourceCollection
+    {
+        /** @var Client $client */
+        $client = $request->user();
+
+        $accommodations = Accommodation::query()
+            ->select('accommodations.*')
+            ->with(['room.images', 'reservation'])
+            ->whereNotNull('room_id')
+            ->join('reservations', 'reservations.id', '=', 'accommodations.reservation_id')
+            ->where('reservations.client_id', $client->getKey())
+            ->orderByDesc('reservations.check_in')
+            ->orderByDesc('reservations.id')
+            ->orderBy('accommodations.id')
+            ->get();
+
+        return ClientRoomResource::collection($accommodations);
     }
 
     public function store(StoreRoomRequest $request): RoomResource

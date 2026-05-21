@@ -25,10 +25,11 @@ Route::get('/room-images/{image}', [RoomImageController::class, 'show']);
 
 Route::middleware(['auth:sanctum', 'client.token'])->group(function (): void {
     Route::post('/auth/logout', [AuthController::class, 'logout']);
-    Route::get('/auth/profile', [ProfileController::class, 'show']);
-    Route::patch('/auth/profile', [ProfileController::class, 'update']);
+    Route::get('/profile', [ProfileController::class, 'show']);
+    Route::patch('/profile', [ProfileController::class, 'update']);
 
     Route::apiResource('clients', ClientController::class)->except(['store']);
+    Route::get('/rooms/my', [RoomController::class, 'my']);
     Route::apiResource('rooms', RoomController::class)->only(['index', 'show']);
     Route::apiResource('reservations', ReservationController::class);
     Route::apiResource('accommodations', AccommodationController::class);

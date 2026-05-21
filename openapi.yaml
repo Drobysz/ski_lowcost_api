@@ -107,6 +107,12 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/RoomCollection'
+  /rooms/my:
+    get:
+      summary: List rooms linked to the authenticated client reservations
+      responses:
+        '200':
+          $ref: '#/components/responses/ClientRoomCollection'
   /rooms/{room}:
     parameters:
       - $ref: '#/components/parameters/RoomId'
@@ -644,6 +650,17 @@ components:
                 type: array
                 items:
                   $ref: '#/components/schemas/Room'
+    ClientRoomCollection:
+      description: Authenticated client room collection with reservation data
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ClientRoom'
     ReservationItem:
       description: Reservation resource
       content:
@@ -1032,6 +1049,25 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Image'
+    ClientRoom:
+      allOf:
+        - $ref: '#/components/schemas/Room'
+        - type: object
+          properties:
+            reservation:
+              type: object
+              required: [id, check_in, check_out, status]
+              properties:
+                id:
+                  type: integer
+                check_in:
+                  type: string
+                  format: date-time
+                check_out:
+                  type: string
+                  format: date-time
+                status:
+                  $ref: '#/components/schemas/ReservationStatus'
     Image:
       type: object
       properties:
