@@ -69,6 +69,10 @@ test('authenticated client routes require a client bearer token', function () {
 
     $this->getJson('/api/rooms')->assertUnauthorized();
     $this->getJson('/api/rooms/my')->assertUnauthorized();
+    $this->postJson('/api/rooms/available', [
+        'check_in' => '2026-01-10 15:00:00',
+        'check_out' => '2026-01-17 10:00:00',
+    ])->assertUnauthorized();
 });
 
 test('authenticated client can list own rooms with reservation data', function () {
@@ -119,4 +123,72 @@ test('authenticated client can list own rooms with reservation data', function (
         ->assertJsonPath('data.0.reservation.check_out', '2026-01-17 10:00:00')
         ->assertJsonPath('data.0.reservation.status', 'paid')
         ->assertJsonMissing(['id' => $otherRoom->id]);
+});
+
+test('authenticated client can list rooms available for date range', function () {
+    $client = Client::factory()->create();
+    $availableRoom = Room::factory()->create(['num' => 301]);
+    $occupiedRoom = Room::factory()->create(['num' => 302]);
+    $cancelledRoom = Room::factory()->create(['num' => 303]);
+    $outsideRangeRoom = Room::factory()->create(['num' => 304]);
+
+    $occupiedReservation = Reservation::query()->create([
+        'client_id' => $client->id,
+        'check_in' => '2026-01-12 15:00:00',
+        'check_out' => '2026-01-15 10:00:00',
+        'status' => 'paid',
+    ]);
+    $cancelledReservation = Reservation::query()->create([
+        'client_id' => $client->id,
+        'check_in' => '2026-01-12 15:00:00',
+        'check_out' => '2026-01-15 10:00:00',
+        'status' => 'cancelled',
+    ]);
+    $outsideReservation = Reservation::query()->create([
+        'client_id' => $client->id,
+        'check_in' => '2026-02-01 15:00:00',
+        'check_out' => '2026-02-08 10:00:00',
+        'status' => 'paid',
+    ]);
+
+    Accommodation::query()->create([
+        'reservation_id' => $occupiedReservation->id,
+        'room_id' => $occupiedRoom->id,
+        'client_id' => $client->id,
+    ]);
+    Accommodation::query()->create([
+        'reservation_id' => $cancelledReservation->id,
+        'room_id' => $cancelledRoom->id,
+        'client_id' => $client->id,
+    ]);
+    Accommodation::query()->create([
+        'reservation_id' => $outsideReservation->id,
+        'room_id' => $outsideRangeRoom->id,
+        'client_id' => $client->id,
+    ]);
+
+    Sanctum::actingAs($client, ['client']);
+
+    $this->postJson('/api/rooms/available', [
+        'check_in' => '2026-01-10 15:00:00',
+        'check_out' => '2026-01-17 10:00:00',
+    ])
+        ->assertSuccessful()
+        ->assertJsonFragment(['id' => $availableRoom->id])
+        ->assertJsonFragment(['id' => $cancelledRoom->id])
+        ->assertJsonFragment(['id' => $outsideRangeRoom->id])
+        ->assertJsonMissing(['id' => $occupiedRoom->id]);
+});
+
+test('available rooms request validates date range', function () {
+    $client = Client::factory()->create();
+
+    Sanctum::actingAs($client, ['client']);
+
+    $this->postJson('/api/rooms/available', [
+        'check_in' => '2026-01-17 10:00:00',
+        'check_out' => '2026-01-10 15:00:00',
+    ])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['check_out']);
 });

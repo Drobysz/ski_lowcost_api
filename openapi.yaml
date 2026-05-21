@@ -113,6 +113,14 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/ClientRoomCollection'
+  /rooms/available:
+    post:
+      summary: List rooms available for the provided date range
+      requestBody:
+        $ref: '#/components/requestBodies/AvailableRooms'
+      responses:
+        '200':
+          $ref: '#/components/responses/RoomCollection'
   /rooms/{room}:
     parameters:
       - $ref: '#/components/parameters/RoomId'
@@ -537,6 +545,12 @@ components:
         multipart/form-data:
           schema:
             $ref: '#/components/schemas/UpdateRoomRequest'
+    AvailableRooms:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/AvailableRoomsRequest'
     StoreReservation:
       required: true
       content:
@@ -893,6 +907,16 @@ components:
           items:
             type: string
             format: binary
+    AvailableRoomsRequest:
+      type: object
+      required: [check_in, check_out]
+      properties:
+        check_in:
+          type: string
+          format: date-time
+        check_out:
+          type: string
+          format: date-time
     StoreReservationRequest:
       type: object
       required: [client_id, check_in, check_out, accommodations]

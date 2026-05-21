@@ -30,6 +30,7 @@ Route::middleware(['auth:sanctum', 'client.token'])->group(function (): void {
 
     Route::apiResource('clients', ClientController::class)->except(['store']);
     Route::get('/rooms/my', [RoomController::class, 'my']);
+    Route::post('/rooms/available', [RoomController::class, 'available']);
     Route::apiResource('rooms', RoomController::class)->only(['index', 'show']);
     Route::apiResource('reservations', ReservationController::class);
     Route::apiResource('accommodations', AccommodationController::class);

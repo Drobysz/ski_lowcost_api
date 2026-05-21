@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\AvailableRoomsRequest;
 use App\Http\Requests\StoreRoomRequest;
 use App\Http\Requests\UpdateRoomRequest;
 use App\Http\Resources\ClientRoomResource;
@@ -46,6 +47,24 @@ class RoomController extends Controller
             ->get();
 
         return ClientRoomResource::collection($accommodations);
+    }
+
+    public function available(AvailableRoomsRequest $request): AnonymousResourceCollection
+    {
+        $data = $request->validated();
+
+        $rooms = Room::query()
+            ->with('images')
+            ->whereDoesntHave('accommodations.reservation', function ($query) use ($data): void {
+                $query
+                    ->where('status', '!=', 'cancelled')
+                    ->where('check_in', '<', $data['check_out'])
+                    ->where('check_out', '>', $data['check_in']);
+            })
+            ->latest('id')
+            ->get();
+
+        return RoomResource::collection($rooms);
     }
 
     public function store(StoreRoomRequest $request): RoomResource
