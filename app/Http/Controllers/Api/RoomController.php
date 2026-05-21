@@ -25,9 +25,11 @@ use RuntimeException;
 
 class RoomController extends Controller
 {
-    public function index(): AnonymousResourceCollection
+    public function index(Request $request): AnonymousResourceCollection
     {
-        return RoomResource::collection(Room::query()->with('images')->latest('id')->paginate());
+        $perPage = $request->user() instanceof Client ? 6 : null;
+
+        return RoomResource::collection(Room::query()->with('images')->latest('id')->paginate($perPage));
     }
 
     public function my(Request $request): AnonymousResourceCollection

@@ -125,6 +125,35 @@ test('authenticated client can list own rooms with reservation data', function (
         ->assertJsonMissing(['id' => $otherRoom->id]);
 });
 
+test('client room index is paginated by six rooms', function () {
+    $client = Client::factory()->create();
+    Room::factory()->count(7)->create();
+
+    Sanctum::actingAs($client, ['client']);
+
+    $this->getJson('/api/rooms')
+        ->assertSuccessful()
+        ->assertJsonCount(6, 'data')
+        ->assertJsonPath('meta.per_page', 6)
+        ->assertJsonPath('meta.total', 7);
+});
+
+test('admin room index keeps default pagination', function () {
+    $admin = Admin::query()->create([
+        'name' => 'admin',
+        'password' => Hash::make('password123'),
+    ]);
+    Room::factory()->count(16)->create();
+
+    Sanctum::actingAs($admin, ['admin']);
+
+    $this->getJson('/api/admin/rooms')
+        ->assertSuccessful()
+        ->assertJsonCount(15, 'data')
+        ->assertJsonPath('meta.per_page', 15)
+        ->assertJsonPath('meta.total', 16);
+});
+
 test('authenticated client can list rooms available for date range', function () {
     $client = Client::factory()->create();
     $availableRoom = Room::factory()->create(['num' => 301]);
