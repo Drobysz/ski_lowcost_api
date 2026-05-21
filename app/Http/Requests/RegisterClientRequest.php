@@ -34,7 +34,7 @@ class RegisterClientRequest extends FormRequest
             'height' => ['required', 'numeric', 'min:0'],
             'weight' => ['required', 'integer', 'min:0'],
             'shoe_size' => ['required', 'integer', 'min:0'],
-            'password' => ['required', 'string', 'min:8', 'confirmed'],
+            'password' => ['required', 'string', 'min:8'],
         ];
     }
 }

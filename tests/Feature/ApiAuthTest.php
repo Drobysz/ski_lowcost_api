@@ -20,7 +20,6 @@ test('a client can register and login with token pair', function () {
         'weight' => 74,
         'shoe_size' => 42,
         'password' => 'password123',
-        'password_confirmation' => 'password123',
     ];
 
     $this->postJson('/api/clients', $payload)

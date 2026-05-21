@@ -715,7 +715,7 @@ components:
           example: Client registered successfully
     RegisterClientRequest:
       type: object
-      required: [first_name, last_name, age, address, birth_date, tel, skiing_level, height, weight, shoe_size, password, password_confirmation]
+      required: [first_name, last_name, age, address, birth_date, tel, skiing_level, height, weight, shoe_size, password]
       properties:
         first_name:
           type: string
@@ -751,8 +751,6 @@ components:
         password:
           type: string
           minLength: 8
-        password_confirmation:
-          type: string
     UpdateClientRequest:
       type: object
       properties:
