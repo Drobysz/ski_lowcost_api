@@ -9,9 +9,11 @@ use App\Http\Requests\UpdateRoomRequest;
 use App\Http\Resources\ClientRoomResource;
 use App\Http\Resources\RoomResource;
 use App\Models\Accommodation;
+use App\Models\Admin;
 use App\Models\Client;
 use App\Models\Image;
 use App\Models\Room;
+use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -27,7 +29,7 @@ class RoomController extends Controller
 {
     public function index(Request $request): AnonymousResourceCollection
     {
-        $perPage = $request->user() instanceof Client ? 6 : null;
+        $perPage = $request->user() instanceof Admin ? null : 6;
 
         return RoomResource::collection(Room::query()->with('images')->latest('id')->paginate($perPage));
     }
@@ -54,19 +56,80 @@ class RoomController extends Controller
     public function available(AvailableRoomsRequest $request): AnonymousResourceCollection
     {
         $data = $request->validated();
+        $view = $this->normalizedAvailableRoomView($data['view'] ?? null);
+        $roomSize = isset($data['room_size']) ? (int) $data['room_size'] : null;
+        $bedsSort = $this->normalizedBedsSort($data['beds_sort'] ?? null);
+        [$checkIn, $checkOut] = $this->availableRoomDateRange($data['check_in'], $data['check_out']);
 
-        $rooms = Room::query()
+        $query = Room::query()
             ->with('images')
-            ->whereDoesntHave('accommodations.reservation', function ($query) use ($data): void {
+            ->whereDoesntHave('accommodations.reservation', function ($query) use ($checkIn, $checkOut): void {
                 $query
                     ->where('status', '!=', 'cancelled')
-                    ->where('check_in', '<', $data['check_out'])
-                    ->where('check_out', '>', $data['check_in']);
-            })
-            ->latest('id')
-            ->get();
+                    ->where('check_in', '<', $checkOut)
+                    ->where('check_out', '>', $checkIn);
+            });
+
+        if ($view !== null) {
+            $query->where('view', $view);
+        }
+
+        if ($roomSize !== null) {
+            $query->where('nb_lits', $roomSize);
+        }
+
+        if ($bedsSort !== null) {
+            $query->orderBy('nb_lits', $bedsSort)->orderByDesc('id');
+        } else {
+            $query->latest('id');
+        }
+
+        $rooms = $query->get();
 
         return RoomResource::collection($rooms);
+    }
+
+    private function normalizedAvailableRoomView(?string $view): ?string
+    {
+        return match ($view) {
+            'Slopes', 'slopes', 'mountains' => 'mountains',
+            'Parking', 'parking' => 'parking',
+            default => null,
+        };
+    }
+
+    private function normalizedBedsSort(?string $direction): ?string
+    {
+        return match ($direction) {
+            'up', 'asc' => 'asc',
+            'down', 'desc' => 'desc',
+            default => null,
+        };
+    }
+
+    /**
+     * @return array{0: CarbonImmutable, 1: CarbonImmutable}
+     */
+    private function availableRoomDateRange(string $checkIn, string $checkOut): array
+    {
+        return [
+            $this->isDateOnly($checkIn)
+                ? $this->availableRoomDate($checkIn)->startOfDay()
+                : $this->availableRoomDate($checkIn),
+            $this->isDateOnly($checkOut)
+                ? $this->availableRoomDate($checkOut)->endOfDay()
+                : $this->availableRoomDate($checkOut),
+        ];
+    }
+
+    private function availableRoomDate(string $value): CarbonImmutable
+    {
+        return CarbonImmutable::parse($value);
+    }
+
+    private function isDateOnly(string $value): bool
+    {
+        return preg_match('/^\d{4}-\d{2}-\d{2}$/', $value) === 1;
     }
 
     public function store(StoreRoomRequest $request): RoomResource

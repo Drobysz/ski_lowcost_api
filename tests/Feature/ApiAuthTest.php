@@ -67,12 +67,7 @@ test('authenticated client routes require a client bearer token', function () {
         'password' => Hash::make('password123'),
     ]);
 
-    $this->getJson('/api/rooms')->assertUnauthorized();
     $this->getJson('/api/rooms/my')->assertUnauthorized();
-    $this->postJson('/api/rooms/available', [
-        'check_in' => '2026-01-10 15:00:00',
-        'check_out' => '2026-01-17 10:00:00',
-    ])->assertUnauthorized();
 });
 
 test('authenticated client can list own rooms with reservation data', function () {
@@ -125,11 +120,8 @@ test('authenticated client can list own rooms with reservation data', function (
         ->assertJsonMissing(['id' => $otherRoom->id]);
 });
 
-test('client room index is paginated by six rooms', function () {
-    $client = Client::factory()->create();
+test('public room index is paginated by six rooms for clients', function () {
     Room::factory()->count(7)->create();
-
-    Sanctum::actingAs($client, ['client']);
 
     $this->getJson('/api/rooms')
         ->assertSuccessful()
@@ -155,11 +147,11 @@ test('admin room index keeps default pagination', function () {
 });
 
 test('authenticated client can list rooms available for date range', function () {
-    $client = Client::factory()->create();
     $availableRoom = Room::factory()->create(['num' => 301]);
     $occupiedRoom = Room::factory()->create(['num' => 302]);
     $cancelledRoom = Room::factory()->create(['num' => 303]);
     $outsideRangeRoom = Room::factory()->create(['num' => 304]);
+    $client = Client::factory()->create();
 
     $occupiedReservation = Reservation::query()->create([
         'client_id' => $client->id,
@@ -196,11 +188,9 @@ test('authenticated client can list rooms available for date range', function ()
         'client_id' => $client->id,
     ]);
 
-    Sanctum::actingAs($client, ['client']);
-
     $this->postJson('/api/rooms/available', [
-        'check_in' => '2026-01-10 15:00:00',
-        'check_out' => '2026-01-17 10:00:00',
+        'check_in' => '2026-01-10',
+        'check_out' => '2026-01-17',
     ])
         ->assertSuccessful()
         ->assertJsonFragment(['id' => $availableRoom->id])
@@ -209,11 +199,39 @@ test('authenticated client can list rooms available for date range', function ()
         ->assertJsonMissing(['id' => $occupiedRoom->id]);
 });
 
+test('available rooms can be filtered and sorted by beds', function () {
+    Room::factory()->create(['view' => 'mountains', 'nb_lits' => 2]);
+    Room::factory()->create(['view' => 'mountains', 'nb_lits' => 4]);
+    Room::factory()->create(['view' => 'mountains', 'nb_lits' => 6]);
+    $parkingRoom = Room::factory()->create(['view' => 'parking', 'nb_lits' => 6]);
+
+    $response = $this->postJson('/api/rooms/available', [
+        'check_in' => '2026-01-10 15:00:00',
+        'check_out' => '2026-01-17 10:00:00',
+        'filters' => [
+            'view' => 'Slopes',
+        ],
+        'sort' => [
+            'beds' => 'down',
+        ],
+    ])
+        ->assertSuccessful()
+        ->assertJsonCount(3, 'data')
+        ->assertJsonMissing(['id' => $parkingRoom->id]);
+
+    expect(collect($response->json('data'))->pluck('nb_lits')->all())->toBe([6, 4, 2]);
+
+    $this->postJson('/api/rooms/available', [
+        'check_in' => '2026-01-10 15:00:00',
+        'check_out' => '2026-01-17 10:00:00',
+        'room_size' => 4,
+    ])
+        ->assertSuccessful()
+        ->assertJsonCount(1, 'data')
+        ->assertJsonPath('data.0.nb_lits', 4);
+});
+
 test('available rooms request validates date range', function () {
-    $client = Client::factory()->create();
-
-    Sanctum::actingAs($client, ['client']);
-
     $this->postJson('/api/rooms/available', [
         'check_in' => '2026-01-17 10:00:00',
         'check_out' => '2026-01-10 15:00:00',

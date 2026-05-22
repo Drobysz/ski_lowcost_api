@@ -103,6 +103,7 @@ paths:
           $ref: '#/components/responses/ClientItem'
   /rooms:
     get:
+      security: []
       summary: List rooms
       responses:
         '200':
@@ -115,6 +116,7 @@ paths:
           $ref: '#/components/responses/ClientRoomCollection'
   /rooms/available:
     post:
+      security: []
       summary: List rooms available for the provided date range
       requestBody:
         $ref: '#/components/requestBodies/AvailableRooms'
@@ -125,6 +127,7 @@ paths:
     parameters:
       - $ref: '#/components/parameters/RoomId'
     get:
+      security: []
       summary: Show room
       responses:
         '200':
@@ -913,10 +916,41 @@ components:
       properties:
         check_in:
           type: string
-          format: date-time
+          description: Accepts date-time or date-only format.
+          example: '2026-01-10'
         check_out:
           type: string
-          format: date-time
+          description: Accepts date-time or date-only format.
+          example: '2026-01-17'
+        filters:
+          type: object
+          description: Optional room filters.
+          properties:
+            view:
+              type: string
+              enum: [Slopes, Parking]
+            room_size:
+              type: integer
+              enum: [2, 4, 6]
+        sort:
+          type: object
+          description: Optional sorting options.
+          properties:
+            beds:
+              type: string
+              enum: [up, down]
+        view:
+          type: string
+          enum: [Slopes, Parking]
+          description: Flat alternative to filters.view.
+        room_size:
+          type: integer
+          enum: [2, 4, 6]
+          description: Flat alternative to filters.room_size.
+        beds_sort:
+          type: string
+          enum: [up, down]
+          description: Flat alternative to sort.beds.
     StoreReservationRequest:
       type: object
       required: [client_id, check_in, check_out, accommodations]
