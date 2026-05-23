@@ -24,6 +24,6 @@ class ProfileController extends Controller
         $client = $request->user();
         $client->update($request->validated());
 
-        return new ClientResource($client->refresh());
+        return new ClientResource($client->refresh()->load(['reservations.accommodations.room.images', 'accommodations.room.images']));
     }
 }

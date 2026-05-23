@@ -1188,3 +1188,7 @@ components:
           nullable: true
         client_id:
           type: integer
+        room:
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/Room'

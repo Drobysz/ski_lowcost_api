@@ -3,6 +3,7 @@
 use App\Models\Accommodation;
 use App\Models\Admin;
 use App\Models\Client;
+use App\Models\Image;
 use App\Models\Reservation;
 use App\Models\Room;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -118,6 +119,45 @@ test('authenticated client can list own rooms with reservation data', function (
         ->assertJsonPath('data.0.reservation.check_out', '2026-01-17 10:00:00')
         ->assertJsonPath('data.0.reservation.status', 'paid')
         ->assertJsonMissing(['id' => $otherRoom->id]);
+});
+
+test('reservation accommodations include full room data and images', function () {
+    $client = Client::factory()->create();
+    $room = Room::factory()->create([
+        'num' => 405,
+        'nb_lits' => 4,
+        'view' => 'mountains',
+    ]);
+    $image = Image::query()->create([
+        'room_id' => $room->id,
+        'name' => 'suite.jpg',
+        'path' => "rooms/{$room->id}/suite.jpg",
+        'url' => null,
+    ]);
+    $reservation = Reservation::query()->create([
+        'client_id' => $client->id,
+        'check_in' => '2026-01-10 15:00:00',
+        'check_out' => '2026-01-17 10:00:00',
+        'status' => 'paid',
+        'total_price' => 840,
+    ]);
+
+    Accommodation::query()->create([
+        'reservation_id' => $reservation->id,
+        'room_id' => $room->id,
+        'client_id' => $client->id,
+    ]);
+
+    Sanctum::actingAs($client, ['client']);
+
+    $this->getJson('/api/reservations')
+        ->assertSuccessful()
+        ->assertJsonPath('data.0.accommodations.0.room.id', $room->id)
+        ->assertJsonPath('data.0.accommodations.0.room.num', 405)
+        ->assertJsonPath('data.0.accommodations.0.room.nb_lits', 4)
+        ->assertJsonPath('data.0.accommodations.0.room.view', 'mountains')
+        ->assertJsonPath('data.0.accommodations.0.room.images.0.id', $image->id)
+        ->assertJsonPath('data.0.accommodations.0.room.images.0.name', 'suite.jpg');
 });
 
 test('public room index is paginated by six rooms for clients', function () {
