@@ -12,10 +12,12 @@ class AvailableRoomsRequest extends FormRequest
     {
         $filters = $this->input('filters', []);
         $sort = $this->input('sort', []);
+        $view = $this->input('view', data_get($filters, 'view'));
+        $roomSize = $this->input('room_size', data_get($filters, 'room_size'));
 
         $this->merge([
-            'view' => $this->input('view', data_get($filters, 'view')),
-            'room_size' => $this->input('room_size', data_get($filters, 'room_size')),
+            'view' => $this->arrayValue($view),
+            'room_size' => $this->arrayValue($roomSize),
             'beds_sort' => $this->input('beds_sort', data_get($sort, 'beds')),
         ]);
     }
@@ -38,9 +40,23 @@ class AvailableRoomsRequest extends FormRequest
         return [
             'check_in' => ['required', 'date'],
             'check_out' => ['required', 'date', 'after:check_in'],
-            'view' => ['sometimes', 'nullable', 'string', Rule::in(['Slopes', 'Parking', 'slopes', 'parking', 'mountains'])],
-            'room_size' => ['sometimes', 'nullable', 'integer', Rule::in([2, 4, 6])],
+            'view' => ['sometimes', 'nullable', 'array'],
+            'view.*' => ['string', Rule::in(['Slopes', 'Parking', 'slopes', 'parking', 'mountains'])],
+            'room_size' => ['sometimes', 'nullable', 'array'],
+            'room_size.*' => ['integer', Rule::in([2, 4, 6])],
             'beds_sort' => ['sometimes', 'nullable', 'string', Rule::in(['up', 'down', 'asc', 'desc'])],
         ];
+    }
+
+    /**
+     * @return array<int, mixed>|null
+     */
+    private function arrayValue(mixed $value): ?array
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        return is_array($value) ? array_values($value) : [$value];
     }
 }

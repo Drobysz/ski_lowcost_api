@@ -187,6 +187,8 @@ test('admin room index keeps default pagination', function () {
 });
 
 test('authenticated client can list rooms available for date range', function () {
+    Sanctum::actingAs(Client::factory()->create(), ['client']);
+
     $availableRoom = Room::factory()->create(['num' => 301]);
     $occupiedRoom = Room::factory()->create(['num' => 302]);
     $cancelledRoom = Room::factory()->create(['num' => 303]);
@@ -240,9 +242,11 @@ test('authenticated client can list rooms available for date range', function ()
 });
 
 test('available rooms can be filtered and sorted by beds', function () {
-    Room::factory()->create(['view' => 'mountains', 'nb_lits' => 2]);
-    Room::factory()->create(['view' => 'mountains', 'nb_lits' => 4]);
-    Room::factory()->create(['view' => 'mountains', 'nb_lits' => 6]);
+    Sanctum::actingAs(Client::factory()->create(), ['client']);
+
+    $twoBedRoom = Room::factory()->create(['view' => 'mountains', 'nb_lits' => 2]);
+    $fourBedRoom = Room::factory()->create(['view' => 'mountains', 'nb_lits' => 4]);
+    $sixBedRoom = Room::factory()->create(['view' => 'mountains', 'nb_lits' => 6]);
     $parkingRoom = Room::factory()->create(['view' => 'parking', 'nb_lits' => 6]);
 
     $response = $this->postJson('/api/rooms/available', [
@@ -269,9 +273,31 @@ test('available rooms can be filtered and sorted by beds', function () {
         ->assertSuccessful()
         ->assertJsonCount(1, 'data')
         ->assertJsonPath('data.0.nb_lits', 4);
+
+    $multiFilterResponse = $this->postJson('/api/rooms/available', [
+        'check_in' => '2026-01-10 15:00:00',
+        'check_out' => '2026-01-17 10:00:00',
+        'filters' => [
+            'view' => ['Slopes', 'Parking'],
+            'room_size' => [2, 6],
+        ],
+        'sort' => [
+            'beds' => 'up',
+        ],
+    ])
+        ->assertSuccessful()
+        ->assertJsonCount(3, 'data')
+        ->assertJsonFragment(['id' => $twoBedRoom->id])
+        ->assertJsonFragment(['id' => $sixBedRoom->id])
+        ->assertJsonFragment(['id' => $parkingRoom->id])
+        ->assertJsonMissing(['id' => $fourBedRoom->id]);
+
+    expect(collect($multiFilterResponse->json('data'))->pluck('nb_lits')->all())->toBe([2, 6, 6]);
 });
 
 test('available rooms request validates date range', function () {
+    Sanctum::actingAs(Client::factory()->create(), ['client']);
+
     $this->postJson('/api/rooms/available', [
         'check_in' => '2026-01-17 10:00:00',
         'check_out' => '2026-01-10 15:00:00',

@@ -56,8 +56,8 @@ class RoomController extends Controller
     public function available(AvailableRoomsRequest $request): AnonymousResourceCollection
     {
         $data = $request->validated();
-        $view = $this->normalizedAvailableRoomView($data['view'] ?? null);
-        $roomSize = isset($data['room_size']) ? (int) $data['room_size'] : null;
+        $views = $this->normalizedAvailableRoomViews($data['view'] ?? []);
+        $roomSizes = $this->normalizedRoomSizes($data['room_size'] ?? []);
         $bedsSort = $this->normalizedBedsSort($data['beds_sort'] ?? null);
         [$checkIn, $checkOut] = $this->availableRoomDateRange($data['check_in'], $data['check_out']);
 
@@ -70,12 +70,12 @@ class RoomController extends Controller
                     ->where('check_out', '>', $checkIn);
             });
 
-        if ($view !== null) {
-            $query->where('view', $view);
+        if ($views !== []) {
+            $query->whereIn('view', $views);
         }
 
-        if ($roomSize !== null) {
-            $query->where('nb_lits', $roomSize);
+        if ($roomSizes !== []) {
+            $query->whereIn('nb_lits', $roomSizes);
         }
 
         if ($bedsSort !== null) {
@@ -89,13 +89,34 @@ class RoomController extends Controller
         return RoomResource::collection($rooms);
     }
 
-    private function normalizedAvailableRoomView(?string $view): ?string
+    /**
+     * @param  array<int, string>  $views
+     * @return array<int, string>
+     */
+    private function normalizedAvailableRoomViews(array $views): array
+    {
+        return array_values(array_unique(array_filter(array_map(
+            fn (string $view): ?string => $this->normalizedAvailableRoomView($view),
+            $views
+        ))));
+    }
+
+    private function normalizedAvailableRoomView(string $view): ?string
     {
         return match ($view) {
             'Slopes', 'slopes', 'mountains' => 'mountains',
             'Parking', 'parking' => 'parking',
             default => null,
         };
+    }
+
+    /**
+     * @param  array<int, int|string>  $roomSizes
+     * @return array<int, int>
+     */
+    private function normalizedRoomSizes(array $roomSizes): array
+    {
+        return array_values(array_unique(array_map('intval', $roomSizes)));
     }
 
     private function normalizedBedsSort(?string $direction): ?string

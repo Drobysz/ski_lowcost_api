@@ -927,11 +927,17 @@ components:
           description: Optional room filters.
           properties:
             view:
-              type: string
-              enum: [Slopes, Parking]
+              type: array
+              items:
+                type: string
+                enum: [Slopes, Parking]
+              example: [Slopes, Parking]
             room_size:
-              type: integer
-              enum: [2, 4, 6]
+              type: array
+              items:
+                type: integer
+                enum: [2, 4, 6]
+              example: [2, 4, 6]
         sort:
           type: object
           description: Optional sorting options.
@@ -940,12 +946,22 @@ components:
               type: string
               enum: [up, down]
         view:
-          type: string
-          enum: [Slopes, Parking]
+          oneOf:
+            - type: string
+              enum: [Slopes, Parking]
+            - type: array
+              items:
+                type: string
+                enum: [Slopes, Parking]
           description: Flat alternative to filters.view.
         room_size:
-          type: integer
-          enum: [2, 4, 6]
+          oneOf:
+            - type: integer
+              enum: [2, 4, 6]
+            - type: array
+              items:
+                type: integer
+                enum: [2, 4, 6]
           description: Flat alternative to filters.room_size.
         beds_sort:
           type: string
