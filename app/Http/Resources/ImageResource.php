@@ -19,7 +19,7 @@ class ImageResource extends JsonResource
             'room_id' => $this->room_id,
             'name' => $this->name,
             'path' => $this->path,
-            'url' => $this->isPlaceholder() ? null : url("/api/room-images/{$this->id}"),
+            'url' => $this->isPlaceholder() ? null : url("/ski_lowcost_api/room-images/{$this->id}"),
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
         ];
