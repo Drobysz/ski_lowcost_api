@@ -305,3 +305,30 @@ test('available rooms request validates date range', function () {
         ->assertUnprocessable()
         ->assertJsonValidationErrors(['check_out']);
 });
+
+test('authenticated client can search users by first and last name', function () {
+    Sanctum::actingAs(Client::factory()->create(), ['client']);
+
+    $matchingClient = Client::factory()->create([
+        'first_name' => 'Elena',
+        'last_name' => 'Rossi',
+    ]);
+    Client::factory()->create([
+        'first_name' => 'Marcus',
+        'last_name' => 'Thorne',
+    ]);
+
+    $this->getJson('/api/users?search=Elena')
+        ->assertSuccessful()
+        ->assertJsonCount(1, 'data')
+        ->assertJsonPath('data.0.id', $matchingClient->id);
+
+    $this->getJson('/api/users?search=elena%20rossi')
+        ->assertSuccessful()
+        ->assertJsonCount(1, 'data')
+        ->assertJsonPath('data.0.id', $matchingClient->id);
+
+    $this->getJson('/api/users')
+        ->assertSuccessful()
+        ->assertJsonCount(3, 'data');
+});

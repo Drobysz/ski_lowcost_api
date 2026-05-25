@@ -14,6 +14,28 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class ClientController extends Controller
 {
+    public function users(Request $request): AnonymousResourceCollection
+    {
+        $query = Client::query()->latest('id');
+        $search = trim((string) $request->query('search', ''));
+
+        if ($search !== '') {
+            $terms = preg_split('/\s+/', $search) ?: [];
+
+            foreach ($terms as $term) {
+                $query->where(function ($query) use ($term): void {
+                    $like = '%'.strtolower($term).'%';
+
+                    $query
+                        ->whereRaw('LOWER(first_name) LIKE ?', [$like])
+                        ->orWhereRaw('LOWER(last_name) LIKE ?', [$like]);
+                });
+            }
+        }
+
+        return ClientResource::collection($query->limit(10)->get());
+    }
+
     public function index(Request $request): AnonymousResourceCollection
     {
         if ($request->user() instanceof Admin) {

@@ -33,6 +33,20 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/ClientCollection'
+  /users:
+    get:
+      summary: Search clients by first or last name
+      parameters:
+        - name: search
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Optional text from the reservation group searchbar.
+          example: Elena Rossi
+      responses:
+        '200':
+          $ref: '#/components/responses/ClientCollection'
   /clients/{client}:
     parameters:
       - $ref: '#/components/parameters/ClientId'
