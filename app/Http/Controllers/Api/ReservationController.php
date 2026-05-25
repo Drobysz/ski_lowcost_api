@@ -49,7 +49,7 @@ class ReservationController extends Controller
             $this->ensureRoomsAreAvailable($roomIds, $data['check_in'], $data['check_out']);
 
             $attributes = Arr::only($data, ['client_id', 'check_in', 'check_out', 'total_price']);
-            $attributes['status'] = $user instanceof Admin ? ($data['status'] ?? 'not paid') : 'not paid';
+            $attributes['status'] = 'approaching';
 
             $reservation = Reservation::create($attributes);
             $reservation->accommodations()->createMany($data['accommodations']);

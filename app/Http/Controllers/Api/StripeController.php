@@ -8,6 +8,7 @@ use App\Models\Client;
 use App\Models\Reservation;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 
 class StripeController extends Controller
 {
@@ -25,13 +26,14 @@ class StripeController extends Controller
 
         $secret = config('services.stripe.secret');
         abort_unless(is_string($secret) && $secret !== '', 422, 'Stripe secret is not configured.');
+        $frontendUrl = $this->frontendUrl($request);
 
         $response = Http::asForm()
             ->withToken($secret)
             ->post('https://api.stripe.com/v1/checkout/sessions', [
                 'mode' => 'payment',
-                'success_url' => rtrim((string) config('services.stripe.frontend_url'), '/').'/payment/success?session_id={CHECKOUT_SESSION_ID}',
-                'cancel_url' => rtrim((string) config('services.stripe.frontend_url'), '/').'/payment/cancel',
+                'success_url' => $frontendUrl.'/payment/success?session_id={CHECKOUT_SESSION_ID}',
+                'cancel_url' => $frontendUrl.'/payment/cancel',
                 'client_reference_id' => (string) $reservation->id,
                 'metadata' => [
                     'reservation_id' => (string) $reservation->id,
@@ -65,5 +67,18 @@ class StripeController extends Controller
                 'checkout_url' => $response['url'],
             ],
         ]);
+    }
+
+    private function frontendUrl(StripeCheckoutRequest $request): string
+    {
+        foreach (['X-Frontend-Origin', 'Origin'] as $header) {
+            $origin = (string) $request->header($header, '');
+
+            if (Str::startsWith($origin, ['http://', 'https://'])) {
+                return rtrim($origin, '/');
+            }
+        }
+
+        return rtrim((string) config('app.url'), '/');
     }
 }
